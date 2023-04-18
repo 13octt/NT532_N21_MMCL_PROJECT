@@ -21,7 +21,8 @@ public class MainActivity extends AppCompatActivity {
     private static final String TOPIC_TEMPERATURE = "TEMP";
     private static final String TOPIC_HUMIDITY = "HUMI";
     private static final String TOPIC_GAS = "GAS";
-    private static final String TOPIC_LED = "LED";
+    private static final String TOPIC_LED_ON = "LED";
+    private static final String TOPIC_LED_OFF = "OFF";
 
     TextView tvTemp,tvHumidity, tvGas, tvLedOn, tvLedOff;
 
@@ -46,18 +47,23 @@ public class MainActivity extends AppCompatActivity {
             public void messageArrived(String topic, MqttMessage message) throws Exception {
                 String payload = new String(message.getPayload());
                 Log.d("MQTT", "Received message on topic: " + topic + " , " + payload);
-                if (topic.equals(TOPIC_TEMPERATURE)) {
+//                if (topic.equals("TEMP")) {
+//                    // xử lý dữ liệu nhiệt độ
+//                    tvTemp = findViewById(R.id.temperature_value_text_view);
+//                    tvTemp.setText(payload);
+//                } else if (topic.equals("HUMI")) {
+//                    // xử lý dữ liệu độ ẩm
+//                    tvHumidity = findViewById(R.id.temperature_value_text_view);
+//                    tvHumidity.setText(payload);
+//                } else if(topic.equals(TOPIC_GAS)){
+//                    tvGas = findViewById(R.id.gas_value_text_view);
+//                    tvGas.setText(payload);
+//                }
+
+                if (topic.equals("SENSORS")) {
                     // xử lý dữ liệu nhiệt độ
                     tvTemp = findViewById(R.id.temperature_value_text_view);
                     tvTemp.setText(payload);
-                    //
-                } else if (topic.equals(TOPIC_HUMIDITY)) {
-                    // xử lý dữ liệu độ ẩm
-                    tvHumidity = findViewById(R.id.temperature_value_text_view);
-                    tvHumidity.setText(payload);
-                } else if(topic.equals(TOPIC_GAS)){
-                    tvGas = findViewById(R.id.gas_value_text_view);
-                    tvGas.setText(payload);
                 }
             }
 
@@ -82,8 +88,11 @@ public class MainActivity extends AppCompatActivity {
                     // Connection success
                     Log.d("MQTT", "Connection Success");
                     subscribeToTopic();
+//                    subscribeToTopic(TOPIC_TEMPERATURE);
+//                    subscribeToTopic(TOPIC_HUMIDITY);
+//                    subscribeToTopic(TOPIC_GAS);
 
-                    publishMessage("duy", "Hello duy", 2);
+//                    publishMessage("duy", "Hello duy", 2);
 
                 }
 
