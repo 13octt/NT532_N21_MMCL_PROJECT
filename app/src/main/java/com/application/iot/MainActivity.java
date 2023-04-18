@@ -1,81 +1,160 @@
 package com.application.iot;
+import static android.service.controls.ControlsProviderService.TAG;
 
+import android.annotation.SuppressLint;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.ProgressBar;
 import android.widget.TextView;
 
 import androidx.appcompat.app.AppCompatActivity;
+import org.eclipse.paho.android.service.MqttAndroidClient;
+import org.eclipse.paho.client.mqttv3.IMqttActionListener;
 import org.eclipse.paho.client.mqttv3.IMqttDeliveryToken;
-import org.eclipse.paho.client.mqttv3.MqttCallbackExtended;
+import org.eclipse.paho.client.mqttv3.IMqttToken;
+import org.eclipse.paho.client.mqttv3.MqttCallback;
+import org.eclipse.paho.client.mqttv3.MqttConnectOptions;
 import org.eclipse.paho.client.mqttv3.MqttException;
 import org.eclipse.paho.client.mqttv3.MqttMessage;
+import org.w3c.dom.Text;
 
-public class MainActivity extends AppCompatActivity implements MqttCallbackExtended{
 
-    private static final String TAG = "MainActivity";
-    private static final String BROKER_URL = "tcp://34.171.157.201:1883";
-    private static final String CLIENT_ID = "my-android-app";
-    private static final String TOPIC = "dht11/temperature";
+public class MainActivity extends AppCompatActivity {
+    private MqttAndroidClient mqttAndroidClient;
+    private static final String TOPIC_TEMPERATURE = "TEMP";
+    private static final String TOPIC_HUMIDITY = "HUMI";
+    private static final String TOPIC_GAS = "GAS";
 
-    private TextView temp;
-    private TextView humidity;
-    private ProgressBar progressBar;
-    private MqttClientWrapper mqttClientWrapper;
+    TextView tvTemp,tvHumidity, tvGas, tvLedOn, tvLedOff;
 
+
+
+    @SuppressLint("MissingInflatedId")
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        temp = findViewById(R.id.temperature_value_text_view);
-        humidity = findViewById(R.id.humidity_value_text_view);
-        progressBar = findViewById(R.id.progress_bar);
 
-        try {
-            mqttClientWrapper = new MqttClientWrapper(BROKER_URL, CLIENT_ID, TOPIC, this);
-        } catch (MqttException e) {
-            Log.e(TAG, "Error creating MQTT client", e);
-        }
+        String serverUri = "tcp://35.222.45.221:1883";
+        String clientId = "SMARTPHONE";
 
-    }
 
-    public void updateUI(final String data){
-        runOnUiThread(new Runnable() {
+        mqttAndroidClient = new MqttAndroidClient(getApplicationContext(), serverUri, clientId);
+        connectToMQTTBroker();
+        mqttAndroidClient.setCallback(new MqttCallback() {
             @Override
-            public void run() {
-                String[] values = data.split(",");
-                if (values.length == 2) {
-                    temp.setText(values[0] + "°C");
-                    humidity.setText(values[1] + "%");
-                    progressBar.setVisibility(View.GONE);
+            public void connectionLost(Throwable cause) {
+                Log.d(TAG, "Connection lost: " + cause.getMessage());
+            }
+
+            @Override
+            public void messageArrived(String topic, MqttMessage message) throws Exception {
+                String payload = new String(message.getPayload());
+                Log.d("MQTT", "Received message on topic: " + topic + " , " + payload);
+                if (topic.equals("TEMP")) {
+                    // xử lý dữ liệu nhiệt độ
+                    tvTemp = findViewById(R.id.temperature_value_text_view);
+                    tvTemp.setText(payload);
+                } else if (topic.equals("HUMI")) {
+                    // xử lý dữ liệu độ ẩm
+                    tvHumidity = findViewById(R.id.humidity_value_text_view);
+                    tvHumidity.setText(payload);
+                } else if(topic.equals(TOPIC_GAS)){
+                    tvGas = findViewById(R.id.gas_value_text_view);
+                    tvGas.setText(payload);
                 }
             }
+
+            @Override
+            public void deliveryComplete(IMqttDeliveryToken token) {
+
+            }
         });
-    }
 
-    @Override
-    public void connectComplete(boolean reconnect, String serverURI) {
-        Log.e(TAG, "MQTT connect");
 
     }
 
-    @Override
-    public void connectionLost(Throwable cause) {
-        Log.e(TAG, "MQTT connection lost", cause);
+    public void connectToMQTTBroker(){
+        try {
+            String username = "thanhduy";
+            String password = "thanhduy";
+            MqttConnectOptions mqttConnectOptions = new MqttConnectOptions();
+            mqttConnectOptions.setUserName(username);
+            mqttConnectOptions.setPassword(password.toCharArray());
+            IMqttToken token = mqttAndroidClient.connect(mqttConnectOptions);
+            token.setActionCallback(new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    // Connection success
+                    Log.d("MQTT", "Connection Success");
+                    subscribeToTopic(TOPIC_TEMPERATURE);
+                    subscribeToTopic(TOPIC_HUMIDITY);
+                    subscribeToTopic(TOPIC_GAS);
+
+                }
+
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    // Connection failed
+                    Log.d("MQTT", "Connection Failed");
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
-    @Override
-    public void messageArrived(String topic, MqttMessage message) throws Exception {
-        String payload = new String(message.getPayload());
-        Log.d(TAG, "Received message on topic " + topic + ": " + payload);
+    public void subscribeToTopic(String topic){
+//        String topic = "SENSORS";
+        int qos = 1;
+        try {
+            IMqttToken subToken = mqttAndroidClient.subscribe(topic, qos);
+            subToken.setActionCallback(new IMqttActionListener() {
+                @Override
+                public void onSuccess(IMqttToken asyncActionToken) {
+                    // The message was published
+                    Log.d("MQTT", "Subscribed to topic: " + topic + ", qos: " + qos);
+                }
 
-        // TODO: Parse the message payload and update the UI
-        updateUI(payload);
+                @Override
+                public void onFailure(IMqttToken asyncActionToken, Throwable exception) {
+                    Log.d("MQTT", "Failed to subscribe.");
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
 
-    @Override
-    public void deliveryComplete(IMqttDeliveryToken token) {
+    public void publishMessage(String topic, String payload, int qos){
+        try {
+            MqttMessage message = new MqttMessage(payload.getBytes());
+            message.setQos(qos);
 
+            mqttAndroidClient.publish(topic, message);
+            Log.d("MQTT", "Topic: " + topic + ", Message: " + message);
+
+            tvLedOn = findViewById(R.id.led_on_text_view);
+            tvLedOn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    publishMessage("DEVICE", "RELAY:ON", 1);
+                    Log.d("MQTT", "PUBLISH LED SUCCESSFUL");
+
+                }
+            });
+            tvLedOff = findViewById(R.id.led_off_text_view);
+            tvLedOn.setOnClickListener(new View.OnClickListener() {
+                @Override
+                public void onClick(View view) {
+                    publishMessage("DEVICE", "RELAY:OFF", 1);
+                    Log.d("MQTT", "PUBLISH LED SUCCESSFUL");
+                }
+            });
+        } catch (MqttException e) {
+            e.printStackTrace();
+        }
     }
+
+
 }
