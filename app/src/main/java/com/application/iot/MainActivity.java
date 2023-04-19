@@ -70,7 +70,23 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
+        tvLedOn = findViewById(R.id.led_on_text_view);
+        tvLedOn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                publishMessage("DEVICE", "RELAY:ON", 1);
+                Log.d("MQTT", "PUBLISH LED SUCCESSFUL");
 
+            }
+        });
+        tvLedOff = findViewById(R.id.led_off_text_view);
+        tvLedOn.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View view) {
+                publishMessage("DEVICE", "RELAY:OFF", 1);
+                Log.d("MQTT", "PUBLISH LED SUCCESSFUL");
+            }
+        });
 
     }
 
@@ -134,27 +150,9 @@ public class MainActivity extends AppCompatActivity {
             mqttAndroidClient.publish(topic, message);
             Log.d("MQTT", "Topic: " + topic + ", Message: " + message);
 
-            tvLedOn = findViewById(R.id.led_on_text_view);
-            tvLedOn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    publishMessage("DEVICE", "RELAY:ON", 1);
-                    Log.d("MQTT", "PUBLISH LED SUCCESSFUL");
 
-                }
-            });
-            tvLedOff = findViewById(R.id.led_off_text_view);
-            tvLedOn.setOnClickListener(new View.OnClickListener() {
-                @Override
-                public void onClick(View view) {
-                    publishMessage("DEVICE", "RELAY:OFF", 1);
-                    Log.d("MQTT", "PUBLISH LED SUCCESSFUL");
-                }
-            });
         } catch (MqttException e) {
             e.printStackTrace();
         }
     }
-
-
 }
